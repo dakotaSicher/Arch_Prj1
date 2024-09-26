@@ -37,7 +37,9 @@ int is_prime(int n, bool* primes){
 }
 
 int main(int argc, char* argv[]){
-    int n = atoi(argv[1]);
+    int n;
+    if (argc==1) n=10000;
+    else n = atoi(argv[1]);
 
     int count = sieve(n);
     printf("prime count is %i\n", count);
