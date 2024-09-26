@@ -2,3 +2,5 @@ sieve
 sieve_static
 
 setting.json
+*.txt
+*.ini
