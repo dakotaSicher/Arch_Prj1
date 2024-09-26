@@ -13,6 +13,11 @@ default_binary = os.path.join(
     "../../../",
     "tests/test-progs/hello/bin/x86/linux/hello",
 )
+riscv_default_binary = os.path.join(
+    thispath,
+    "../../../",
+    "tests/test-progs/hello/bin/riscv/linux/hello",
+)
 default_clock = "1GHz"
 
 
@@ -29,7 +34,12 @@ parser.add_argument(
     type=str,
     help="""Specify the CPU model ie simple, minor""",
 )
-
+parser.add_argument(
+    "--riscv",
+    default=False,
+    type=bool,
+    help="""Specify RISC-V Arch, X86 when false""",
+)
 
 parser.add_argument(
     "--clock",
@@ -41,7 +51,8 @@ parser.add_argument(
 options = parser.parse_args()
 
 if (not options.cmd):
-    options.cmd = default_binary
+    if(not options.riscv): options.cmd = default_binary 
+    else: options.cmd = riscv_default_binary
 #print(options.caches)
 system = System()
 
@@ -53,10 +64,17 @@ system.mem_mode = 'timing'
 system.mem_ranges = [AddrRange('512MB')]
 
 #CPU
-if(options.cpu == "minor"):
-    system.cpu = X86MinorCPU()
+if(not options.riscv):
+    if(options.cpu == "minor"):
+        system.cpu = X86MinorCPU()
+    else:
+        system.cpu = X86TimingSimpleCPU()
 else:
-    system.cpu = X86TimingSimpleCPU()
+    if(options.cpu == "minor"):
+        system.cpu = RiscvMinorCPU()
+    else:
+        system.cpu = RiscvTimingSimpleCPU()
+
 
 
 if(not options.caches):
@@ -93,9 +111,10 @@ system.cpu.createInterruptController()
 
 ######################################
 #X86 only
-system.cpu.interrupts[0].pio = system.membus.mem_side_ports
-system.cpu.interrupts[0].int_requestor = system.membus.cpu_side_ports
-system.cpu.interrupts[0].int_responder = system.membus.mem_side_ports
+if(not  options.riscv ):
+    system.cpu.interrupts[0].pio = system.membus.mem_side_ports
+    system.cpu.interrupts[0].int_requestor = system.membus.cpu_side_ports
+    system.cpu.interrupts[0].int_responder = system.membus.mem_side_ports
 #######################################
 
 system.mem_ctrl = MemCtrl()

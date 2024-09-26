@@ -1,5 +1,6 @@
 sieve
 sieve_static
+sieve_riscv
 
 setting.json
 *.txt
