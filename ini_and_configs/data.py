@@ -2,7 +2,6 @@ import os
 import re
 import glob
 import configparser
-import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 import pandas as pd

@@ -5,3 +5,4 @@ sieve_riscv
 setting.json
 *.txt
 *.ini
+*.png
