@@ -1,7 +1,4 @@
-sieve:
-	gcc sieve.c -lm -o sieve
-
-static:
+x86:
 	gcc sieve.c -lm -o sieve_static -static
 
 riscv:
