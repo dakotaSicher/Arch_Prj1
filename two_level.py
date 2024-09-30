@@ -75,7 +75,8 @@ else:
     else:
         system.cpu = RiscvTimingSimpleCPU()
 
-
+#system.cpu_clk_domain = SrcClockDomain(clock=options.clock, voltage_domain=system.clk_domain.voltage_domain)
+#apparently this does nothing, all runs gave  the same result
 
 if(not options.caches):
     system.membus = SystemXBar()

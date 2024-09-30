@@ -1,3 +1,10 @@
+'''
+I did recieve assistance from ChatGPT with a number of parts on this script
+In particular with parsing all the config and stats files in a directory, and with
+some of the ploting details.
+'''
+
+
 import os
 import re
 import glob
@@ -25,7 +32,7 @@ class SimRun:
         config = configparser.ConfigParser()
         config.read(self.config_file)
         # Extract the CPU type from the [system.cpu] section
-        self.cpu_type       = config.get('system.cpu', 'type')[4:]
+        self.cpu_type       = config.get('system.cpu', 'type')[4:] #removes "Base" for simplicity
         speed = 1000/int(config.get('system.clk_domain','clock'))
         self.clock_speed    = str(round(speed,1))
         self.l1i            = int(int(config.get('system.cpu.icache','size',fallback=self.l1i))/1024)
@@ -82,27 +89,25 @@ def prepare_plot_data(runs):
     }
 
     for i, run in enumerate(runs):
-        # Create a label combining cpu_type and clock_speed
         data['run_number'].append(run.run_num)
-
         cacheStr = ""
         if (run.l1i): 
             cacheStr = f" L1i:{run.l1i:<5} L1d:{run.l1d:<5} L1Assoc:{run.l1iAssoc:<5} L2:{run.l2}"
-        label = f"Run {run.run_num:<3}({run.sim_seconds}): {run.cpu_type:<20} {run.clock_speed:<5} MHz {cacheStr}"
+        label = f"Run {run.run_num:<3}({run.sim_seconds}): {run.cpu_type:<20} {run.clock_speed:<5} GHz {cacheStr}"
         #print(label)
         data['cpu_type'].append(run.cpu_type)
         data['label'].append(label)
         data['sim_seconds'].append(float(run.sim_seconds))
     
-    return pd.DataFrame(data)  # Convert to a pandas DataFrame
+    return pd.DataFrame(data)  
 
-# Plot the runs
-# Plot the runs with labels and continuous Y-axis for sim_seconds
+
 def plot_runs(runs, title='Simulation Runs'):
     df = prepare_plot_data(runs)
     legend_labels = df['label'].tolist()
 
-    
+    #Dropping run 3 since its ~10s for both x86 and risc, distorts the scale too much
+    #Data for 3 is still included in the text
     run3 = df[(df['run_number']=='3')].index
     df = df.drop(run3)
 
@@ -120,20 +125,16 @@ def plot_runs(runs, title='Simulation Runs'):
     for i,label in enumerate(legend_labels):
         key_text += f"{label}\n"
 
-        
     fig.text(0.1, 0, key_text, ha='left', fontsize=10, wrap=True, fontfamily='monospace')
 
-    #plt.legend()
-    plt.tight_layout(rect=[0, 0.2, 1, 1])  # Leave space at the bottom for the key
+    plt.tight_layout(rect=[0, 0.2, 1, 1]) 
     plt.show()
 
 
 if __name__=="__main__":
-    # Directory containing the config*.ini and stats*.txt files
     x86Directory = './X86'
     riscDirectory = './RISCV'
 
-    # Process the directory
     x86FilePairs = processDirectory(x86Directory)
     riscFilePairs = processDirectory(riscDirectory)
 
@@ -142,7 +143,6 @@ if __name__=="__main__":
         run = SimRun(config_file, stats_file,run_num)
         run.parseRunFiles()
         x86Runs.append(run)
-        #print(run.stats_file, "\t\t" ,run.sim_seconds)
     x86Runs.sort(key=lambda x: int(x.run_num))
 
     riscRuns = []
@@ -150,11 +150,24 @@ if __name__=="__main__":
         run = SimRun(config_file, stats_file,run_num)
         run.parseRunFiles()
         riscRuns.append(run)
-        #print(run.stats_file,"\t\t",run.sim_seconds)
     riscRuns.sort(key=lambda x: int(x.run_num))
-
-    x86Runs_no3 = [x for x in x86Runs if not x.run_num == '3' ]
-    riscRuns_no3 = [x for x in riscRuns if not x.run_num == '3' ]
 
     plot_runs(x86Runs, title='X86 Simulation Runs')
     plot_runs(riscRuns, title='RISC-V Simulation Runs')
+
+    x86simple3time = float(x86Runs[12].sim_seconds)
+    x86Minor3time = float(x86Runs[13].sim_seconds)
+    riscsimple3time = float(riscRuns[12].sim_seconds)
+    riscMinor3time = float(riscRuns[13].sim_seconds)
+    print("X86 sims_seconds ratios:")
+    for x in x86Runs[4:12]: 
+        if x.cpu_type == "TimingSimpleCPU":
+            print(f"Run {x.run_num}({x.clock_speed} GHz)({x.cpu_type}) ratio to 3GHz time: {float(x.sim_seconds)/x86simple3time}")
+        if x.cpu_type == "MinorCPU":
+            print(f"Run {x.run_num}({x.clock_speed} GHz)({x.cpu_type}) ratio to 3GHz time: {float(x.sim_seconds)/x86Minor3time}")
+    print("\nRISC-V sims_seconds ratios:")
+    for x in riscRuns[4:12]: 
+        if x.cpu_type == "TimingSimpleCPU":
+            print(f"Run {x.run_num}({x.clock_speed} GHz)({x.cpu_type}) ratio to 3GHz time: {float(x.sim_seconds)/riscsimple3time}")
+        if x.cpu_type == "MinorCPU":
+            print(f"Run {x.run_num}({x.clock_speed} GHz)({x.cpu_type}) ratio to 3GHz time: {float(x.sim_seconds)/riscMinor3time}")

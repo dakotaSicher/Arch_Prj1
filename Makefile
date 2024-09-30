@@ -5,4 +5,4 @@ riscv:
 	riscv64-linux-gnu-gcc sieve.c -o sieve_riscv -static -lm
 
 clean:
-	rm sieve sieve_static
+	rm sieve_riscv sieve_static
